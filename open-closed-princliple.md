@@ -14,7 +14,7 @@
 
 ## 違反した例
 
-社員の等級と手当から、社員に支払う給与の支払額を計算する`CalculateSalaryService`クラスの例。
+社員の役職と手当から、社員に支払う給与の支払額を計算する`CalculateSalaryService`クラスの例。
 
 ```typescript
 type Position = "Intern" | "Staff" | "Manager";
@@ -72,4 +72,72 @@ console.log(totalPayment);
 
 ### 違反している理由
 
+以上のコードでも問題なく動作する。しかし、たとえば`Leader`などの新しい役職を加えるときのシチュエーションを考えると、既存の`switch`文に`case`を追加したり、`Position`型に`Leader`を追加する対応をしなければならず、上述したようなバグを引き起こす可能性がある。これは、開放閉鎖の原則に違反していると言える。
+
 ### 解決策
+
+次のように書き換えることで、既存のコードを書き換えずに新しい役職を加えることができるようになる。
+
+```typescript
+interface Employee {
+  name: string;
+  getSalary: (base: number) => number
+}
+
+class CaluculatePaymentService {
+  private readonly BASE = 100;
+  private totalPayment = 0;
+
+  public constructor(
+    private readonly employee: Employee,
+    private readonly allowance: number = 0,
+  ) {}
+
+  public execute = (): number => {
+    this.addSalaryToTotalPayment();
+    this.addAllowanceToTotalPayment();
+
+    return this.totalPayment;
+  };
+
+  private addSalaryToTotalPayment = (): void => {
+    this.totalPayment += this.employee.getSalary(this.BASE)
+  };
+
+  private addAllowanceToTotalPayment = (): void => {
+    this.totalPayment += this.allowance;
+  };
+}
+```
+
+`Employee`をinterfaceにし、給与額の計算処理をそちらに移している。そして、`Intern`、`Staff`、`Manager`などの役職は、`Employee`を`implements`で実装する。
+
+```typescript
+class Intern implements Employee {
+  public constructor(public name: string) {}
+
+  public getSalary = (base: number) => base * 0.5;
+}
+
+class Staff implements Employee {
+  public constructor(public name: string) {}
+
+  public getSalary = (base: number) => base;
+}
+
+class Manager implements Employee  {
+  public constructor(public name: string) {}
+
+  public getSalary = (base: number) => base * 2;
+}
+```
+
+このようにすることで、`Leader`などの新しい役職を加えるときのシチュエーションでも、既存のコードを変更する必要がなくなる。`Leader`クラスを追加したいなら、`Employee`を`implements`すればよいということが明らかである。
+
+```typescript
+class Leader implements Employee  {
+  public constructor(public name: string) {}
+
+  public getSalary = (base: number) => base * 1.5;
+}
+```
