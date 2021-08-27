@@ -110,7 +110,7 @@ class CaluculatePaymentService {
 }
 ```
 
-`Employee`をinterfaceにし、給与額の計算処理をそちらに移している。そして、`Intern`、`Staff`、`Manager`などの役職は、`Employee`を`implements`で実装する。
+`Employee`を`interface`にし、給与額の計算処理をそちらに移している。そして、`Intern`、`Staff`、`Manager`などの役職は、`Employee`を`implements`する。
 
 ```typescript
 class Intern implements Employee {
@@ -132,7 +132,7 @@ class Manager implements Employee  {
 }
 ```
 
-このようにすることで、`Leader`などの新しい役職を加えるときのシチュエーションでも、既存のコードを変更する必要がなくなる。`Leader`クラスを追加したいなら、`Employee`を`implements`すればよいということが明らかである。
+このようにすることで、`Leader`などの新しい役職を加えるときのシチュエーションでも、既存のコードを変更する必要がなくなる（Closed）。`Leader`クラスを追加したいなら、`Employee`を`implements`すればよいということが明らかである。（Open）
 
 ```typescript
 class Leader implements Employee  {
