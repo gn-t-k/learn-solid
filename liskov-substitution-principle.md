@@ -59,7 +59,7 @@ class Rectangle implements IRectangle {
 
 `IRectangle`型のクラスは、長方形の横の長さ/縦の長さを設定するメソッド`setWidth`/`setHeight`と、長方形の面積を計算する`getArea`を実装しなければならない。サブタイプ`Rectangle`はスーパータイプ`IRectangle`を正しく実装できている。
 
-そして、`IRectangle`型のクラスを利用する関数として、`IRectangle[]`型のインスタンスを受け取って2x4の`IRectangle[]`を返す関数`getTwoByFourRectangleList`がある。
+そして、`IRectangle`型のクラスを利用する関数として、複数の長方形を2x4にして返す関数`getTwoByFourRectangleList`がある。
 
 ```typescript
 const getTwoByFourRectangleList = (rectangleList: IRectangle[]): IRectangle[] =>
@@ -89,7 +89,7 @@ describe("2x4の長方形を生成する", () => {
 
 `Rectangle`が`IRectangle`を置換可能になっており、リスコフの置換原則を満たしているため、このユニットテストは問題なくパスする。
 
-ここに、`IRectangle`の実装として、正方形を表す`Square`クラスを追加してみる。
+ここに、新たな`IRectangle`の実装として、正方形を表す`Square`クラスを追加してみる。
 
 ```typescript
 class Square implements IRectangle {
@@ -127,7 +127,9 @@ class Square implements IRectangle {
 const getTwoByFourRectangleList = (rectangleList: IRectangle[]): IRectangle[] =>
   // Squareのインスタンスが来た場合、4x4の正方形が生成されてしまう
   rectangleList.map((rectangle) => rectangle.setWidth(2).setHeight(4));
+```
 
+```typescript
 describe("2x4の長方形を生成する", () => {
   test("生成された長方形の面積はすべて8である", () => {
     const twoByFourRectangleList = getTwoByFourRectangleList([
@@ -147,6 +149,82 @@ describe("2x4の長方形を生成する", () => {
 });
 ```
 
-`Rectangle`の`setWidth`は、事後条件として、「`width`が変更されていること」、「`height`が変更されていないこと」などがあると考えられます。しかし、`Square`の`setWidth`は「`length`が変更されていること」という1つの事後条件しかなく、事後条件が弱まっていると考えることができる。
+`Rectangle`の`setWidth`は、事後条件として、「`width`が変更されていること」、「`height`が変更されていないこと」などがあると考えられる。しかし、`Square`の`setWidth`は「`length`が変更されていること」という1つの事後条件しかなく、事後条件が弱まっていると考えることができる。
 
 ### 解決策
+
+#### アンチパターン的な解決策
+
+`getTwoByFourRectangleList`のインターフェイスを変更せずに対応しようとすると、以下のようになる。
+
+```typescript
+const getTwoByFourRectangleList = (rectangleList: IRectangle[]): IRectangle[] =>
+  rectangleList.map((rectangle) => {
+    if (rectangle instanceof Square) {
+      // エラーを投げるもしくはスキップするなどの処理
+    }
+
+    return rectangle.setWidth(2).setHeight(4);
+  });
+```
+
+しかし、この修正では、スーパータイプ`IRectangle`の知識しか持たなかった関数がサブタイプ`Square`の知識を持つことになってしまう。それにより、`Square`に変更があったときに影響を受けてしまう可能性が生まれる。また、今後新たに`IRectangle`の実装を増やしたとき、`Square`と同様に`instanceof`などを使って分岐処理を入れなければいけない可能性があり、これは開放閉鎖の原則にも違反している。
+
+#### スーパークラス/サブクラスの関係を見直す
+
+- `Square`は`IRectangle`のサブタイプとして不適切である
+- `Rectangle`と`Square`のスーパークラスを用意する必要があるなら、`setWidth`/`setHeight`は共通化出来ないためなくす（「図形」`Shape`などとする）
+- `getTwoByFourRectangleList`は長方形のみを受け取るようにする
+
+以上のことを考え設計すると、リスコフの置換原則には違反しない状態にすることができる。
+
+```typescript
+interface IShape {
+  getArea: () => number;
+}
+
+class Rectangle implements IShape {
+  private width: number;
+  private height: number;
+
+  public constructor() {
+    this.width = 0;
+    this.height = 0;
+  }
+
+  public setWidth = (width: number) => {
+    this.width = width;
+
+    return this;
+  };
+
+  public setHeight = (height: number) => {
+    this.height = height;
+
+    return this;
+  };
+
+  public getArea = () => this.width * this.height;
+}
+
+class Square implements IShape {
+  private length: number;
+
+  public constructor() {
+    this.length = 0;
+  }
+
+  public setLength = (length: number) => {
+    this.length = length;
+
+    return this;
+  };
+
+  public getArea = () => this.length * this.length;
+}
+```
+
+```typescript
+const getTwoByFourRectangleList = (rectangleList: Rectangle[]): Rectangle[] =>
+  rectangleList.map((rectangle) => rectangle.setWidth(2).setHeight(4));
+```
