@@ -44,7 +44,39 @@ object インターフェイスI {
 
 モジュールAとモジュールBの間にインターフェイスIを挟むことで、（インターフェイスIを正しく実装していさえすれば）モジュールAを意識することなくモジュールBを改修することができるようになる。
 
-## 違反した例
+## 依存性逆転の原則の適用例
+
+```typescript
+export type User = {
+  id: string;
+  name: string;
+  // etc...
+};
+```
+
+```typescript
+import { fetchUser } from "path/to/fetch-user";
+
+const getUserName = async () => {
+  const user = await fetchUser();
+
+  return user.name;
+};
+```
+
+```typescript
+export const fetchUser = async (): Promise<User> => {
+  try {
+    const response = await fetch("/api/user");
+    // fetchの返り値に型をつける自前のutil
+    const user = validateType<User>(response.json());
+
+    return user;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+```
 
 ### 違反している理由
 

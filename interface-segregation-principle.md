@@ -13,7 +13,7 @@
 タスク管理アプリケーションの「タスク」に関する情報を持つ`Task`オブジェクトと、「タスクのタイトル」を更新する`updateTaskTitle`関数との関係について。`ITaskRepository`はDBなどの永続化層のインターフェイスを表しているが、この例ではあまり重要でないため説明は省略する。
 
 ```typescript
-type Task = {
+export type Task = {
   id: string;
   title: string;
   details: string;
@@ -33,7 +33,7 @@ const updateTaskTitle = async (
 ```
 
 ```typescript
-interface ITaskRepository {
+export interface ITaskRepository {
   registerTask: (props: { title: string; details: string }) => Promise<void>;
   getTask: (props: { id: string }) => Promise<Task>;
   updateTitle: (props: { id: string; title: string }) => Promise<void>;
